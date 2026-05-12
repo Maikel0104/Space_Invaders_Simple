@@ -1,193 +1,233 @@
 import pygame
 import sys
 
-# --- Configurações Iniciais ---
-LARGURA, ALTURA = 800, 600
-COR_FUNDO_MENU = (50, 0, 50)
-COR_FUNDO_JOGO = (10, 10, 30)  # Um azul bem escuro para o espaço
-COR_FUNDO_GAMEOVER = (100, 0, 0)
-COR_TEXTO = (255, 255, 255)
+# ----------------------------- Configurações Iniciais -----------------------------
+width, height = 800, 600
+background_color_menu = (50, 0, 50)
+background_color_game = (10, 10, 30)
+background_color_gameover = (100, 0, 0)
+text_color = (255, 255, 255)
+commands_color = (120, 162, 200)
 
 # Cores dos Elementos provisórios
-COR_JOGADOR = (0, 255, 0)  # Verde
-COR_ALIEN = (255, 50, 50)  # Vermelho
-COR_TIRO = (255, 255, 0)  # Amarelo
+
+shots_color = (255, 50, 50)
 
 # Variáveis de Controle de Estado
-estado_tela = "MENU"
-rodando = True
+state_display = "MENU"
+game_run = True
 
-# --- Variáveis Globais do Jogo ---
-jogador = {"rect": pygame.Rect(0, 0, 50, 20), "vel": 5}
-tiros = []
+# ----------------------------- Variáveis Globais do Jogo -----------------------------
+gamer = {"rect": pygame.Rect(0, 0, 50, 40), "vel": 5}
+shots = []
 aliens = []
-direcao_aliens = 1  # 1 para direita, -1 para esquerda
+direction_aliens = 1  # 1 para direita, -1 para esquerda
 vel_alien_x = 2  # Velocidade horizontal da horda
 vel_alien_y = 15  # Quanto a horda desce ao bater na parede
-pontuacao = 0
+score = 0
 
+# Variáveis para armazenar as imagens
+img_gamer = None
+img_alien = None
+sound_shot = None
 
-def inicializar():
+# ----------------------------- Inicializar -----------------------------
+def boot():
+    global img_gamer, img_alien, sound_shot
     pygame.init()
-    tela = pygame.display.set_mode((LARGURA, ALTURA))
-    pygame.display.set_caption("Space Invaders Retrô")
-    relogio = pygame.time.Clock()
-    return tela, relogio
+    screen = pygame.display.set_mode((width, height))
+    pygame.display.set_caption("SkyWalkers Invaders")
+    time_clock = pygame.time.Clock()
 
+    try:
+        path_img_gamer = pygame.image.load("assets/gamer.png").convert_alpha()
+        path_img_alien = pygame.image.load("assets/enemy.png").convert_alpha()
 
-def criar_onda_aliens():
-    """Gera a formação inicial de inimigos"""
+        # Ajusta a escala da imagem para o tamanho do retângulo de colisão
+        img_gamer = pygame.transform.scale(path_img_gamer, (gamer["rect"].width, gamer["rect"].height))
+        img_alien = pygame.transform.scale(path_img_alien, (40, 30))
+
+        sound_shot = pygame.mixer.Sound("assets/shot.wav")
+        sound_shot.set_volume(0.3)
+
+    except:
+        print("Aviso: Arquivos de imagem não encontrados. Usando retângulos coloridos.")
+
+    return screen, time_clock
+
+# ----------------------------- Cria mais ondas -----------------------------
+def create_aliens():
+    # Gera a formação inicial de inimigos
     global aliens
     aliens.clear()
-    for linha in range(4):  # 4 linhas de aliens
-        for coluna in range(10):  # 10 colunas de aliens
-            alien_x = 50 + coluna * 60
-            alien_y = 50 + linha * 40
+    for line in range(4):
+        for column in range(10):
+            alien_x = 50 + column * 60
+            alien_y = 50 + line * 40
             aliens.append(pygame.Rect(alien_x, alien_y, 40, 30))
 
+# ----------------------------- Reinicia  jogo -----------------------------
+def reset_game():
+    # Prepara as variáveis para um novo jogo
+    global shots, direction_aliens, score, vel_alien_x
+    gamer["rect"].x = width // 2 - 25
+    gamer["rect"].y = height - 50
+    vel_alien_x = 2
+    shots.clear()
+    direction_aliens = 1
+    score = 0
+    create_aliens()
 
-def resetar_jogo():
-    """Prepara as variáveis para um novo jogo"""
-    global tiros, direcao_aliens, pontuacao
-    jogador["rect"].x = LARGURA // 2 - 25
-    jogador["rect"].y = ALTURA - 50
-    tiros.clear()
-    direcao_aliens = 1
-    pontuacao = 0
-    criar_onda_aliens()
+
+# ----------------------------- Menu -----------------------------
+
+def screen_menu(screen):
+    global state_display
+    screen.fill(background_color_menu)
+    font_title = pygame.font.SysFont("Arial", 60, bold=True)
+    font_sub = pygame.font.SysFont("Arial", 30)
+    font_commands = pygame.font.SysFont("Arial", 25, bold=True)
+    font_commands1 = pygame.font.SysFont("Arial", 20, bold=True)
+
+    title_text = font_title.render("SkyWalkers Invaders", True, (0, 255, 0))
+    text_sub = font_sub.render("PRESSIONE ESPAÇO PARA JOGAR", True, text_color)
+    commands_text = font_commands.render("Comandos: ", True, commands_color)
+    commands_text1 = font_commands1.render("space = atirar", True, commands_color)
+    commands_text2 = font_commands1.render("← → = movimentar-se", True, commands_color)
 
 
-# --- Funções de Tela ---
+    screen.blit(title_text, (width // 2 - title_text.get_width() // 2, height // 2 - 80))
+    screen.blit(text_sub, (width // 2 - text_sub.get_width() // 2, height // 2 - 10))
+    screen.blit(commands_text, (width // 2 - 160, height // 2 + 70))
+    screen.blit(commands_text1, (width // 2 - 80, height // 2 + 95))
+    screen.blit(commands_text2, (width // 2 - 80, height // 2 + 115))
 
-def tela_menu(tela):
-    global estado_tela
-    tela.fill(COR_FUNDO_MENU)
-    fonte_titulo = pygame.font.SysFont("Arial", 60, bold=True)
-    fonte_sub = pygame.font.SysFont("Arial", 30)
-
-    texto_titulo = fonte_titulo.render("SPACE INVADERS", True, COR_JOGADOR)
-    texto_sub = fonte_sub.render("PRESSIONE ESPAÇO PARA JOGAR", True, COR_TEXTO)
-
-    tela.blit(texto_titulo, (LARGURA // 2 - texto_titulo.get_width() // 2, ALTURA // 2 - 50))
-    tela.blit(texto_sub, (LARGURA // 2 - texto_sub.get_width() // 2, ALTURA // 2 + 30))
-
-    for evento in pygame.event.get():
-        if evento.type == pygame.QUIT:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
-        if evento.type == pygame.KEYDOWN:
-            if evento.key == pygame.K_SPACE:
-                resetar_jogo()  # Prepara tudo antes de ir para o jogo
-                estado_tela = "JOGO"
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                reset_game()  # Prepara tudo antes de ir para o jogo
+                state_display = "JOGO"
 
 
-def tela_jogo(tela):
-    global estado_tela, direcao_aliens, pontuacao
-    tela.fill(COR_FUNDO_JOGO)
+# ----------------------------- Jogo -----------------------------
+def screen_game(screen):
+    global state_display, direction_aliens, score, vel_alien_x
+    screen.fill(background_color_game)
 
-    # 1. PROCESSAR EVENTOS (Tiro e Saída)
-    for evento in pygame.event.get():
-        if evento.type == pygame.QUIT:
+    # PROCESSAR EVENTOS (Tiro e Saída)
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
-        if evento.type == pygame.KEYDOWN:
-            if evento.key == pygame.K_SPACE:
-                # Limita a 3 tiros na tela ao mesmo tempo (clássico do Atari)
-                if len(tiros) < 3:
-                    novo_tiro = pygame.Rect(jogador["rect"].centerx - 2, jogador["rect"].top, 4, 15)
-                    tiros.append(novo_tiro)
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                # Limita a 5 tiros na tela ao mesmo tempo
+                if len(shots) < 5:
+                    new_shots = pygame.Rect(gamer["rect"].centerx - 2, gamer["rect"].top, 4, 15)
+                    shots.append(new_shots)
+                    if sound_shot:
+                        sound_shot.play()
 
-    # 2. MOVIMENTAÇÃO DO JOGADOR
-    teclas = pygame.key.get_pressed()
-    if teclas[pygame.K_LEFT] and jogador["rect"].left > 0:
-        jogador["rect"].x -= jogador["vel"]
-    if teclas[pygame.K_RIGHT] and jogador["rect"].right < LARGURA:
-        jogador["rect"].x += jogador["vel"]
+    # MOVIMENTAÇÃO DO JOGADOR
+    key_map = pygame.key.get_pressed()
+    if key_map[pygame.K_LEFT] and gamer["rect"].left > 0:
+        gamer["rect"].x -= gamer["vel"]
+    if key_map[pygame.K_RIGHT] and gamer["rect"].right < width:
+        gamer["rect"].x += gamer["vel"]
 
-    # 3. MOVIMENTAÇÃO DOS TIROS
-    for tiro in tiros[:]:  # Iteramos sobre uma cópia da lista
-        tiro.y -= 10  # Velocidade do tiro subindo
-        if tiro.bottom < 0:
-            tiros.remove(tiro)  # Remove se sair da tela
 
-    # 4. MOVIMENTAÇÃO DOS ALIENS E LÓGICA DE PAREDE
-    bateu_na_parede = False
+    for shot in shots[:]:
+        shot.y -= 10  # Velocidade do tiro subindo
+        if shot.bottom < 0:
+            shots.remove(shot)  # Remove se sair da tela
+
+    # MOVIMENTAÇÃO DOS ALIENS E LÓGICA DE PAREDE
+    limit = False
     for alien in aliens:
-        alien.x += vel_alien_x * direcao_aliens
+        alien.x += vel_alien_x * direction_aliens
         # Verifica se algum alien tocou nas bordas
-        if alien.right >= LARGURA or alien.left <= 0:
-            bateu_na_parede = True
+        if alien.right >= width or alien.left <= 0:
+            limit = True
 
     # Se bater, inverte a direção e desce a horda inteira
-    if bateu_na_parede:
-        direcao_aliens *= -1
+    if limit:
+        direction_aliens *= -1
         for alien in aliens:
             alien.y += vel_alien_y
-            # GAMEOVER: Se a horda chegar no jogador
-            if alien.bottom >= jogador["rect"].top:
-                estado_tela = "GAMEOVER"
+            # GAMEOVER: Se a horda chegar no gamer
+            if alien.bottom >= gamer["rect"].top:
+                state_display = "GAMEOVER"
 
-    # 5. VERIFICAR COLISÕES (Tiros acertando Aliens)
-    for tiro in tiros[:]:
+    # VERIFICAR COLISÕES (Tiros acertando Aliens)
+    for shot in shots[:]:
         for alien in aliens[:]:
-            if tiro.colliderect(alien):
-                if tiro in tiros: tiros.remove(tiro)
+            if shot.colliderect(alien):
+                if shot in shots: shots.remove(shot)
                 if alien in aliens: aliens.remove(alien)
-                pontuacao += 10
-                break  # Evita que um tiro destrua dois aliens sobrepostos
+                score += 10
+                break  # Evita que um shot destrua dois aliens sobrepostos
 
-    # 6. NOVA ONDA: Se limpar a tela, cria mais aliens
+    # NOVA ONDA: Se limpar a tela, cria mais aliens
     if len(aliens) == 0:
-        criar_onda_aliens()
+        vel_alien_x += 1
+        create_aliens()
 
-    # 7. DESENHAR TUDO NA TELA
-    pygame.draw.rect(tela, COR_JOGADOR, jogador["rect"])
+    # DESENHAR TUDO NA TELA
+    if img_gamer:
+        screen.blit(img_gamer, gamer["rect"])
+    else:
+        pygame.draw.rect(screen, (0, 255, 0), gamer["rect"])
 
-    for tiro in tiros:
-        pygame.draw.rect(tela, COR_TIRO, tiro)
+    for shot in shots:
+        pygame.draw.rect(screen, shots_color, shot)
 
     for alien in aliens:
-        pygame.draw.rect(tela, COR_ALIEN, alien)
+        if img_alien:
+            screen.blit(img_alien, alien)
+        else:
+            pygame.draw.rect(screen, (230, 60, 90), alien)
 
-    # Pontuação no canto
-    fonte_pontos = pygame.font.SysFont("Arial", 25)
-    texto_pontos = fonte_pontos.render(f"PONTOS: {pontuacao}", True, COR_TEXTO)
-    tela.blit(texto_pontos, (10, 10))
+    # Pontuação
+    font_score = pygame.font.SysFont("Arial", 25)
+    screen.blit(font_score.render(f"PONTOS: {score}", True, text_color), (10, 10))
 
+# ----------------------------- Game Over -----------------------------
+def screen_gameover(screen):
+    global state_display, score
+    screen.fill(background_color_gameover)
+    font_title = pygame.font.SysFont("Arial", 70, bold=True)
+    font_sub = pygame.font.SysFont("Arial", 30)
 
-def tela_gameover(tela):
-    global estado_tela, pontuacao
-    tela.fill(COR_FUNDO_GAMEOVER)
-    fonte_titulo = pygame.font.SysFont("Arial", 70, bold=True)
-    fonte_sub = pygame.font.SysFont("Arial", 30)
+    title_text = font_title.render("GAME OVER", True, text_color)
+    text_score = font_sub.render(f"PONTUAÇÃO FINAL: {score}", True, shots_color)
+    text_sub = font_sub.render("PRESSIONE 'R' PARA RECOMEÇAR", True, text_color)
 
-    texto_titulo = fonte_titulo.render("GAME OVER", True, COR_TEXTO)
-    texto_pontos = fonte_sub.render(f"PONTUAÇÃO FINAL: {pontuacao}", True, COR_TIRO)
-    texto_sub = fonte_sub.render("PRESSIONE 'R' PARA RECOMEÇAR", True, COR_TEXTO)
+    screen.blit(title_text, (width // 2 - title_text.get_width() // 2, height // 2 - 60))
+    screen.blit(text_score, (width // 2 - text_score.get_width() // 2, height // 2 + 20))
+    screen.blit(text_sub, (width // 2 - text_sub.get_width() // 2, height // 2 + 70))
 
-    tela.blit(texto_titulo, (LARGURA // 2 - texto_titulo.get_width() // 2, ALTURA // 2 - 60))
-    tela.blit(texto_pontos, (LARGURA // 2 - texto_pontos.get_width() // 2, ALTURA // 2 + 20))
-    tela.blit(texto_sub, (LARGURA // 2 - texto_sub.get_width() // 2, ALTURA // 2 + 70))
-
-    for evento in pygame.event.get():
-        if evento.type == pygame.QUIT:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
-        if evento.type == pygame.KEYDOWN:
-            if evento.key == pygame.K_r:
-                estado_tela = "MENU"
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_r:
+                state_display = "MENU"
 
 
-# --- Loop Principal ---
-tela, relogio = inicializar()
+# ----------------------------- Loop Principal -----------------------------
+screen, time_clock = boot()
 
-while rodando:
-    if estado_tela == "MENU":
-        tela_menu(tela)
-    elif estado_tela == "JOGO":
-        tela_jogo(tela)
-    elif estado_tela == "GAMEOVER":
-        tela_gameover(tela)
+while game_run:
+    if state_display == "MENU":
+        screen_menu(screen)
+    elif state_display == "JOGO":
+        screen_game(screen)
+    elif state_display == "GAMEOVER":
+        screen_gameover(screen)
 
     pygame.display.flip()
-    relogio.tick(60)
+    time_clock.tick(60)
