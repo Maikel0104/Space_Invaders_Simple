@@ -56,7 +56,7 @@ def choice_background_level():
                 render_background_game = pygame.image.load(path_background_game).convert()
                 dark_overlay = pygame.Surface(render_background_game.get_size())
                 dark_overlay.fill((0, 0, 0))
-                dark_overlay.set_alpha(170)
+                dark_overlay.set_alpha(190)
 
                 render_background_game.blit(dark_overlay, (0, 0))
                 background_game = pygame.transform.scale(render_background_game, (width, height))
@@ -82,10 +82,14 @@ def boot():
         path_background_gameover = pygame.image.load('assets/images/menu.png').convert()
 
         # Ajusta a escala da imagem
-        img_gamer = pygame.transform.scale(path_img_gamer, (gamer["rect"].width, gamer["rect"].height))
 
-        change_enemy_color = apply_color_filter(path_img_alien, (200, 255, 200, 255))
+
+        change_enemy_color = apply_color_filter(path_img_alien, (57, 255, 20, 255))
+        change_gamer_color = apply_color_filter(path_img_gamer, (0, 255, 255, 255))
+
         img_alien = pygame.transform.scale(change_enemy_color, (40, 30))
+        img_gamer = pygame.transform.scale(change_gamer_color, (gamer["rect"].width, gamer["rect"].height))
+        # img_gamer = pygame.transform.scale(path_img_gamer, (gamer["rect"].width, gamer["rect"].height))
         # img_alien = pygame.transform.scale(path_img_alien, (40, 30))
         background_menu = pygame.transform.scale(path_background_menu, (width, height))
         background_gameover = pygame.transform.scale(path_background_gameover, (width, height))
@@ -240,7 +244,7 @@ def screen_game(screen):
 
     # Pontuação
     font_score = pygame.font.SysFont("Arial", 25)
-    screen.blit(font_score.render(f"PONTOS: {score}", True, text_color), (10, 10))
+    screen.blit(font_score.render(f"PONTOS: {score}", True, (255,255,255)), (10, 10))
 
 
 # ----------------------------- Game Over -----------------------------
