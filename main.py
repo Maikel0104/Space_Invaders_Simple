@@ -129,27 +129,20 @@ def reset_game():
 def screen_menu(screen):
     global state_display, background_menu
     screen.blit(background_menu, (0, 0))
-    font_commands = pygame.font.SysFont("Arial", 25, bold=True)
-    font_commands1 = pygame.font.SysFont("Arial", 20, bold=True)
 
     try:
         font_title = pygame.font.Font("assets/fonts/Starjout.ttf", 55)
-        font_sub = pygame.font.Font("assets/fonts/Starjout.ttf", 25)
+        font_sub = pygame.font.Font("assets/fonts/sub_title.ttf", 25)
     except:
         font_title = pygame.font.SysFont("Arial", 60, bold=True)
         font_sub = pygame.font.SysFont("Arial", 30)
 
     title_text = font_title.render("SkyWalkers Invaders", True, (255, 232, 31))
     text_sub = font_sub.render("PRESSIONE ESPAÇO PARA JOGAR", True, text_color)
-    commands_text = font_commands.render("Comandos: ", True, commands_color)
-    commands_text1 = font_commands1.render("space = atirar", True, commands_color)
-    commands_text2 = font_commands1.render("← → = movimentar-se", True, commands_color)
+
 
     screen.blit(title_text, (width // 2 - title_text.get_width() // 2, height // 2 - 80))
-    screen.blit(text_sub, (width // 2 - text_sub.get_width() // 2, height // 2 - 10))
-    screen.blit(commands_text, (width // 2 - 160, height // 2 + 70))
-    screen.blit(commands_text1, (width // 2 - 80, height // 2 + 95))
-    screen.blit(commands_text2, (width // 2 - 80, height // 2 + 115))
+    screen.blit(text_sub, (width // 2 - text_sub.get_width() // 2, height // 2 + 20))
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -251,7 +244,7 @@ def screen_gameover(screen):
     font_sub = pygame.font.SysFont("Arial", 30)
 
     try:
-        font_title = pygame.font.Font("assets/fonts/STJEDISE.ttf", 70)
+        font_title = pygame.font.Font("assets/fonts/Starjout.ttf", 55)
     except:
         font_title = pygame.font.SysFont("Arial", 70, bold=True)
 
