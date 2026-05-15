@@ -5,8 +5,8 @@ import os
 
 # ----------------------------- Configurações Iniciais -----------------------------
 width, height = 800, 600
-text_color = (255, 255, 255)
-commands_color = (120, 162, 200)
+text_color = (0, 255, 255)
+commands_color = (255, 0, 0)
 shots_color = (255, 50, 50)
 
 state_display = "MENU"
@@ -32,6 +32,13 @@ sound_hit = None
 sound_gameover = None
 sound_start = None
 
+def apply_color_filter(image, color):
+    tinted_image = image.copy()
+    overlay = pygame.Surface(tinted_image.get_size(), pygame.SRCALPHA)
+    overlay.fill(color)
+    tinted_image.blit(overlay, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+    return tinted_image
+
 
 # ----------------------------- Escolhe uma imagem para ser o fundo do jogo -----------------------------
 def choice_background_level():
@@ -42,8 +49,7 @@ def choice_background_level():
         if os.path.exists(folder_path):
             backgrounds = os.listdir(folder_path)
             # Filtra apenas arquivos de imagem válidos
-            list_background_game = [bg for bg in backgrounds]
-
+            list_background_game = [bg for bg in backgrounds if bg.lower().endswith(('.png', '.jpg', '.jpeg'))]
             if list_background_game:
                 chosen_background_game = random.choice(list_background_game)
                 path_background_game = os.path.join(folder_path, chosen_background_game)
@@ -72,7 +78,9 @@ def boot():
 
         # Ajusta a escala da imagem
         img_gamer = pygame.transform.scale(path_img_gamer, (gamer["rect"].width, gamer["rect"].height))
-        img_alien = pygame.transform.scale(path_img_alien, (40, 30))
+
+        change_enemy_color = apply_color_filter(path_img_alien, (57, 255, 20, 255))
+        img_alien = pygame.transform.scale(change_enemy_color, (40, 30))
         background_menu = pygame.transform.scale(path_background_menu, (width, height))
         background_gameover = pygame.transform.scale(path_background_gameover, (width, height))
 
@@ -131,7 +139,7 @@ def screen_menu(screen):
         font_title = pygame.font.SysFont("Arial", 60, bold=True)
         font_sub = pygame.font.SysFont("Arial", 30)
 
-    title_text = font_title.render("SkyWalkers Invaders", True, (0, 255, 0))
+    title_text = font_title.render("SkyWalkers Invaders", True, (255, 232, 31))
     text_sub = font_sub.render("PRESSIONE ESPAÇO PARA JOGAR", True, text_color)
     commands_text = font_commands.render("Comandos: ", True, commands_color)
     commands_text1 = font_commands1.render("space = atirar", True, commands_color)
