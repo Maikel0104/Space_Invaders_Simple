@@ -32,12 +32,12 @@ sound_hit = None
 sound_gameover = None
 sound_start = None
 
-def apply_color_filter(image, color):
-    tinted_image = image.copy()
-    overlay = pygame.Surface(tinted_image.get_size(), pygame.SRCALPHA)
-    overlay.fill(color)
-    tinted_image.blit(overlay, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
-    return tinted_image
+# def apply_color_filter(image, color):
+#     tinted_image = image.copy()
+#     overlay = pygame.Surface(tinted_image.get_size(), pygame.SRCALPHA)
+#     overlay.fill(color)
+#     tinted_image.blit(overlay, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+#     return tinted_image
 
 
 # ----------------------------- Escolhe uma imagem para ser o fundo do jogo -----------------------------
@@ -54,6 +54,11 @@ def choice_background_level():
                 chosen_background_game = random.choice(list_background_game)
                 path_background_game = os.path.join(folder_path, chosen_background_game)
                 render_background_game = pygame.image.load(path_background_game).convert()
+                dark_overlay = pygame.Surface(render_background_game.get_size())
+                dark_overlay.fill((0, 0, 0))
+                dark_overlay.set_alpha(150)
+
+                render_background_game.blit(dark_overlay, (0, 0))
                 background_game = pygame.transform.scale(render_background_game, (width, height))
         else:
             print("Aviso: Diretório de fundos não encontrado.")
@@ -79,8 +84,9 @@ def boot():
         # Ajusta a escala da imagem
         img_gamer = pygame.transform.scale(path_img_gamer, (gamer["rect"].width, gamer["rect"].height))
 
-        change_enemy_color = apply_color_filter(path_img_alien, (57, 255, 20, 255))
-        img_alien = pygame.transform.scale(change_enemy_color, (40, 30))
+        # change_enemy_color = apply_color_filter(path_img_alien, (57, 255, 20, 255))
+        # img_alien = pygame.transform.scale(change_enemy_color, (40, 30))
+        img_alien = pygame.transform.scale(path_img_alien, (40, 30))
         background_menu = pygame.transform.scale(path_background_menu, (width, height))
         background_gameover = pygame.transform.scale(path_background_gameover, (width, height))
 
