@@ -1,63 +1,100 @@
+import random
 import pygame
 import sys
+import os
 
 # ----------------------------- Configurações Iniciais -----------------------------
 width, height = 800, 600
-background_color_menu = (50, 0, 50)
-background_color_game = (10, 10, 30)
-background_color_gameover = (100, 0, 0)
 text_color = (255, 255, 255)
 commands_color = (120, 162, 200)
-
-# Cores dos Elementos provisórios
-
 shots_color = (255, 50, 50)
 
-# Variáveis de Controle de Estado
 state_display = "MENU"
 game_run = True
 
 # ----------------------------- Variáveis Globais do Jogo -----------------------------
-gamer = {"rect": pygame.Rect(0, 0, 50, 40), "vel": 5}
+gamer = {"rect": pygame.Rect(0, 0, 70, 50), "vel": 5}
 shots = []
 aliens = []
-direction_aliens = 1  # 1 para direita, -1 para esquerda
-vel_alien_x = 2  # Velocidade horizontal da horda
-vel_alien_y = 15  # Quanto a horda desce ao bater na parede
+direction_aliens = 1
+vel_alien_x = 2
+vel_alien_y = 15
 score = 0
 
 # Variáveis para armazenar as imagens
+background_menu = None
+background_game = None
+background_gameover = None
 img_gamer = None
 img_alien = None
 sound_shot = None
+sound_hit = None
+sound_gameover = None
+sound_start = None
+
+
+# ----------------------------- Escolhe uma imagem para ser o fundo do jogo -----------------------------
+def choice_background_level():
+    global background_game
+    folder_path = "assets/images/background"
+
+    try:
+        if os.path.exists(folder_path):
+            backgrounds = os.listdir(folder_path)
+            # Filtra apenas arquivos de imagem válidos
+            list_background_game = [bg for bg in backgrounds]
+
+            if list_background_game:
+                chosen_background_game = random.choice(list_background_game)
+                path_background_game = os.path.join(folder_path, chosen_background_game)
+                render_background_game = pygame.image.load(path_background_game).convert()
+                background_game = pygame.transform.scale(render_background_game, (width, height))
+        else:
+            print("Aviso: Diretório de fundos não encontrado.")
+    except Exception as e:
+        print(f"Erro ao selecionar fundo: {e}")
+
 
 # ----------------------------- Inicializar -----------------------------
 def boot():
-    global img_gamer, img_alien, sound_shot
+    global img_gamer, img_alien, sound_shot, sound_hit, sound_gameover, sound_start, background_menu, background_game, background_gameover
     pygame.init()
+    pygame.mixer.init()
     screen = pygame.display.set_mode((width, height))
     pygame.display.set_caption("SkyWalkers Invaders")
     time_clock = pygame.time.Clock()
 
     try:
-        path_img_gamer = pygame.image.load("assets/gamer.png").convert_alpha()
-        path_img_alien = pygame.image.load("assets/enemy.png").convert_alpha()
+        path_img_gamer = pygame.image.load("assets/images/gamer.png").convert_alpha()
+        path_img_alien = pygame.image.load("assets/images/enemy.png").convert_alpha()
+        path_background_menu = pygame.image.load('assets/images/menu.png').convert()
+        path_background_gameover = pygame.image.load('assets/images/menu.png').convert()
 
-        # Ajusta a escala da imagem para o tamanho do retângulo de colisão
+        # Ajusta a escala da imagem
         img_gamer = pygame.transform.scale(path_img_gamer, (gamer["rect"].width, gamer["rect"].height))
         img_alien = pygame.transform.scale(path_img_alien, (40, 30))
+        background_menu = pygame.transform.scale(path_background_menu, (width, height))
+        background_gameover = pygame.transform.scale(path_background_gameover, (width, height))
 
-        sound_shot = pygame.mixer.Sound("assets/shot.wav")
+        choice_background_level()
+
+        sound_shot = pygame.mixer.Sound("assets/sounds/shot.wav")
         sound_shot.set_volume(0.3)
+        sound_hit = pygame.mixer.Sound("assets/sounds/hit.wav")
+        sound_hit.set_volume(0.3)
+        sound_gameover = pygame.mixer.Sound("assets/sounds/gameover.mp3")
+        sound_gameover.set_volume(0.3)
+        sound_start = pygame.mixer.Sound("assets/sounds/start.wav")
+        sound_start.set_volume(0.3)
 
-    except:
-        print("Aviso: Arquivos de imagem não encontrados. Usando retângulos coloridos.")
+    except Exception as e:
+        print(f"Aviso: Arquivos não encontrados ou erro de carregamento: {e}")
 
     return screen, time_clock
 
+
 # ----------------------------- Cria mais ondas -----------------------------
 def create_aliens():
-    # Gera a formação inicial de inimigos
     global aliens
     aliens.clear()
     for line in range(4):
@@ -66,35 +103,39 @@ def create_aliens():
             alien_y = 50 + line * 40
             aliens.append(pygame.Rect(alien_x, alien_y, 40, 30))
 
-# ----------------------------- Reinicia  jogo -----------------------------
+
+# ----------------------------- Reinicia jogo -----------------------------
 def reset_game():
-    # Prepara as variáveis para um novo jogo
     global shots, direction_aliens, score, vel_alien_x
     gamer["rect"].x = width // 2 - 25
-    gamer["rect"].y = height - 50
+    gamer["rect"].y = height - 60
     vel_alien_x = 2
     shots.clear()
     direction_aliens = 1
     score = 0
+    choice_background_level()
     create_aliens()
 
 
 # ----------------------------- Menu -----------------------------
-
 def screen_menu(screen):
-    global state_display
-    screen.fill(background_color_menu)
-    font_title = pygame.font.SysFont("Arial", 60, bold=True)
-    font_sub = pygame.font.SysFont("Arial", 30)
+    global state_display, background_menu
+    screen.blit(background_menu, (0, 0))
     font_commands = pygame.font.SysFont("Arial", 25, bold=True)
     font_commands1 = pygame.font.SysFont("Arial", 20, bold=True)
+
+    try:
+        font_title = pygame.font.Font("assets/fonts/Starjout.ttf", 55)
+        font_sub = pygame.font.Font("assets/fonts/Starjout.ttf", 25)
+    except:
+        font_title = pygame.font.SysFont("Arial", 60, bold=True)
+        font_sub = pygame.font.SysFont("Arial", 30)
 
     title_text = font_title.render("SkyWalkers Invaders", True, (0, 255, 0))
     text_sub = font_sub.render("PRESSIONE ESPAÇO PARA JOGAR", True, text_color)
     commands_text = font_commands.render("Comandos: ", True, commands_color)
     commands_text1 = font_commands1.render("space = atirar", True, commands_color)
     commands_text2 = font_commands1.render("← → = movimentar-se", True, commands_color)
-
 
     screen.blit(title_text, (width // 2 - title_text.get_width() // 2, height // 2 - 80))
     screen.blit(text_sub, (width // 2 - text_sub.get_width() // 2, height // 2 - 10))
@@ -108,74 +149,74 @@ def screen_menu(screen):
             sys.exit()
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
-                reset_game()  # Prepara tudo antes de ir para o jogo
+                if sound_start: sound_start.play()
+                reset_game()
                 state_display = "JOGO"
 
 
 # ----------------------------- Jogo -----------------------------
 def screen_game(screen):
-    global state_display, direction_aliens, score, vel_alien_x
-    screen.fill(background_color_game)
+    global state_display, direction_aliens, score, vel_alien_x, background_game
+    screen.blit(background_game, (0, 0))
 
-    # PROCESSAR EVENTOS (Tiro e Saída)
+    # Processa ao eventos
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
-                # Limita a 5 tiros na tela ao mesmo tempo
                 if len(shots) < 5:
                     new_shots = pygame.Rect(gamer["rect"].centerx - 2, gamer["rect"].top, 4, 15)
                     shots.append(new_shots)
                     if sound_shot:
                         sound_shot.play()
 
-    # MOVIMENTAÇÃO DO JOGADOR
+    # Movimentação do jogador
     key_map = pygame.key.get_pressed()
     if key_map[pygame.K_LEFT] and gamer["rect"].left > 0:
         gamer["rect"].x -= gamer["vel"]
     if key_map[pygame.K_RIGHT] and gamer["rect"].right < width:
         gamer["rect"].x += gamer["vel"]
 
-
     for shot in shots[:]:
-        shot.y -= 10  # Velocidade do tiro subindo
+        shot.y -= 10
         if shot.bottom < 0:
-            shots.remove(shot)  # Remove se sair da tela
+            shots.remove(shot)
 
-    # MOVIMENTAÇÃO DOS ALIENS E LÓGICA DE PAREDE
+    # Lógica de movimentação dos aliens
     limit = False
     for alien in aliens:
         alien.x += vel_alien_x * direction_aliens
-        # Verifica se algum alien tocou nas bordas
         if alien.right >= width or alien.left <= 0:
             limit = True
 
-    # Se bater, inverte a direção e desce a horda inteira
     if limit:
         direction_aliens *= -1
         for alien in aliens:
             alien.y += vel_alien_y
-            # GAMEOVER: Se a horda chegar no gamer
             if alien.bottom >= gamer["rect"].top:
                 state_display = "GAMEOVER"
+                if sound_gameover: sound_gameover.play()
 
-    # VERIFICAR COLISÕES (Tiros acertando Aliens)
+    # Verifica a colisão do tiro
     for shot in shots[:]:
         for alien in aliens[:]:
             if shot.colliderect(alien):
                 if shot in shots: shots.remove(shot)
                 if alien in aliens: aliens.remove(alien)
                 score += 10
-                break  # Evita que um shot destrua dois aliens sobrepostos
+                if sound_hit: sound_hit.play()
+                break
 
-    # NOVA ONDA: Se limpar a tela, cria mais aliens
+    # Se limpara a tela passa de fase
     if len(aliens) == 0:
         vel_alien_x += 1
         create_aliens()
+        choice_background_level()
+        screen.blit(background_game, (0, 0))
 
-    # DESENHAR TUDO NA TELA
+    # Faz os desenhos na tela
     if img_gamer:
         screen.blit(img_gamer, gamer["rect"])
     else:
@@ -194,12 +235,17 @@ def screen_game(screen):
     font_score = pygame.font.SysFont("Arial", 25)
     screen.blit(font_score.render(f"PONTOS: {score}", True, text_color), (10, 10))
 
+
 # ----------------------------- Game Over -----------------------------
 def screen_gameover(screen):
-    global state_display, score
-    screen.fill(background_color_gameover)
-    font_title = pygame.font.SysFont("Arial", 70, bold=True)
+    global state_display, score, background_gameover
+    screen.blit(background_gameover, (0, 0))
     font_sub = pygame.font.SysFont("Arial", 30)
+
+    try:
+        font_title = pygame.font.Font("assets/fonts/STJEDISE.ttf", 70)
+    except:
+        font_title = pygame.font.SysFont("Arial", 70, bold=True)
 
     title_text = font_title.render("GAME OVER", True, text_color)
     text_score = font_sub.render(f"PONTUAÇÃO FINAL: {score}", True, shots_color)
@@ -215,6 +261,7 @@ def screen_gameover(screen):
             sys.exit()
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r:
+                if sound_start: sound_start.play()
                 state_display = "MENU"
 
 
